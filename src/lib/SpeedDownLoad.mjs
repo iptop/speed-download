@@ -1,4 +1,5 @@
 import axios, { isAxiosError } from 'axios'
+import os from 'os'
 import fs from 'fs/promises'
 import { getAgent } from './agent.mjs'
 import { SpeedManagement } from './SpeedManagement.mjs'
@@ -63,9 +64,12 @@ export class SpeedDownLoad {
       if (isAxiosError(e)) {
         const code = e?.code
         if (code == 'EADDRNOTAVAIL') {
-          console.log(code)
+          this.localAddressQueueLength.delete(localAddress)
         }
-        console.log(code)
+        if (code == 'ENETUNREACH') {
+          this.localAddressQueueLength.delete(localAddress)
+        }
+        // console.log(code)
       }
       return [false]
     } finally {
@@ -88,11 +92,18 @@ export class SpeedDownLoad {
   }
 
   initLocalAddressQueue () {
-    const arr = ['192.168.202.201', '192.168.202.202', '192.168.202.203', '192.168.202.204', '192.168.202.205', '192.168.202.206', '192.168.202.207', '192.168.202.208', '192.168.202.209',
-      '192.168.202.95',
-      '192.168.200.127']
-    for (const item of arr) {
-      this.localAddressQueueLength.set(item, 0)
+    const networkInterfaces = os.networkInterfaces()
+    for (const interfaceName in networkInterfaces) {
+      const interfaceDetails = networkInterfaces[interfaceName]
+      for (const detail of interfaceDetails) {
+        if (detail.family === 'IPv6') {
+          continue
+        }
+        if (detail.address == '127.0.0.1') {
+          continue
+        }
+        this.localAddressQueueLength.set(detail.address, 0)
+      }
     }
   }
 
@@ -102,12 +113,10 @@ export class SpeedDownLoad {
       const [startByte, endByte] = task
       const [err, data] = await this.getChunk(startByte, endByte)
       if (!err) {
-        console.log('分片下载错误')
         this.taskList.push(task)
-        break
+        continue
       }
-      // console.log('写入文件');
-      this.completedLength+= data.length
+      this.completedLength += data.length
       this.speedManagement.updateCurrent(this.completedLength)
       await this.saveFileHand.write(data, 0, data.length, startByte)
     }
