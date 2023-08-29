@@ -5,6 +5,7 @@ import { getAgent } from './agent.mjs'
 import { SpeedManagement } from './SpeedManagement.mjs'
 export class SpeedDownLoad {
   targetUrl = ''
+  fileName = ''
   contentLength = 0
   completedLength = 0
   chunkSize = 1024 * 1024 * 4
@@ -13,12 +14,13 @@ export class SpeedDownLoad {
   threadNum = 50
   localAddressQueueLength = new Map()
   speedManagement = null
-  constructor ({ targetUrl }) {
+  constructor ({ targetUrl, fileName }) {
     this.targetUrl = targetUrl
+    this.fileName = fileName
   }
 
   async initSaveFile () {
-    this.saveFileHand = await fs.open('1.mp4', 'w+')
+    this.saveFileHand = await fs.open(this.fileName, 'w+')
   }
 
   async getLen () {
