@@ -3,6 +3,7 @@ import os from 'os'
 import fs from 'fs/promises'
 import { getAgent } from './agent.mjs'
 import { SpeedManagement } from './SpeedManagement.mjs'
+import { excludeNetworkInterfaces } from './tools.mjs'
 export class SpeedDownLoad {
   targetUrl = ''
   fileName = ''
@@ -67,11 +68,13 @@ export class SpeedDownLoad {
         const code = e?.code
         if (code == 'EADDRNOTAVAIL') {
           this.localAddressQueueLength.delete(localAddress)
-        }
-        if (code == 'ENETUNREACH') {
+        } else if (code == 'ENETUNREACH') {
           this.localAddressQueueLength.delete(localAddress)
+        } else {
+          console.log(code)
         }
-        // console.log(code)
+      } else {
+        console.log(e)
       }
       return [false]
     } finally {
@@ -96,6 +99,9 @@ export class SpeedDownLoad {
   initLocalAddressQueue () {
     const networkInterfaces = os.networkInterfaces()
     for (const interfaceName in networkInterfaces) {
+      if (excludeNetworkInterfaces(interfaceName)) {
+        continue
+      }
       const interfaceDetails = networkInterfaces[interfaceName]
       for (const detail of interfaceDetails) {
         if (detail.family === 'IPv6') {
