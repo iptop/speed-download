@@ -150,6 +150,9 @@ export class SpeedDownLoad {
     this.speedManagement = new SpeedManagement({ total: this.contentLength })
     this.speedManagement.start()
     await this.runDownThread()
+    if(this.saveFileHand){
+      await this.saveFileHand.close()
+    }
     this.speedManagement.end()
     console.log('end')
   }
