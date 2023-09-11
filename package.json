@@ -4,7 +4,7 @@
   "description": "",
   "main": "src/index.mjs",
   "bin": {
-    "speed-download": "./bin/speed-download.mjs"
+    "speed-dl": "./bin/speed-download.mjs"
   },
   "publishConfig": {
     "access": "public"
