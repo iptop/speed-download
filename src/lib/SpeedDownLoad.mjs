@@ -96,7 +96,22 @@ export class SpeedDownLoad {
     }
   }
 
-  initLocalAddressQueue () {
+  async testLocalAddress (localAddress) {
+    try{
+      const httpsAgent = getAgent(localAddress)
+      let {status} = await  axios.head('https://www.baidu.com' , {timeout:5000, httpsAgent , validateStatus: () => true})
+      if(status == 200){
+        return true
+      }
+      return false
+    }catch (e) {
+      return false
+    }
+
+  }
+
+  async initLocalAddressQueue () {
+    let arr = []
     const networkInterfaces = os.networkInterfaces()
     for (const interfaceName in networkInterfaces) {
       if (excludeNetworkInterfaces(interfaceName)) {
@@ -110,9 +125,26 @@ export class SpeedDownLoad {
         if (detail.address == '127.0.0.1') {
           continue
         }
-        this.localAddressQueueLength.set(detail.address, 0)
+        //this.localAddressQueueLength.set(detail.address, 0)
+        arr.push(detail.address)
       }
     }
+
+    let pArr = []
+
+
+    for (let item of arr){
+      pArr.push((async ()=>{
+        let rt = await this.testLocalAddress(item)
+        if(rt){
+          this.localAddressQueueLength.set(item, 0)
+        }
+      })())
+
+
+    }
+    await Promise.all(pArr)
+
   }
 
   async downThread () {
@@ -145,7 +177,7 @@ export class SpeedDownLoad {
     }
     console.log('file size:', this.contentLength)
     this.initTaskList()
-    this.initLocalAddressQueue()
+    await this.initLocalAddressQueue()
     await this.initSaveFile()
     this.speedManagement = new SpeedManagement({ total: this.contentLength })
     this.speedManagement.start()
